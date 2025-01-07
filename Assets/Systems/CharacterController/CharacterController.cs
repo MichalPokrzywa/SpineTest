@@ -1,10 +1,7 @@
-using System.Collections.Generic;
 using Spine;
 using Spine.Unity;
 using UnityEngine;
-using Animation = UnityEngine.Animation;
 using AnimationState = Spine.AnimationState;
-using Event = Spine.Event;
 
 namespace Character
 {
@@ -38,15 +35,6 @@ namespace Character
             characterState = CharacterState.Idle;
             skeletonAnimation = GetComponent<SkeletonAnimation>();
             animationState = skeletonAnimation.AnimationState;
-
-            // Optional: Configure default mixing
-            animationState.Data.SetMix(idle.name, walking.name, 0.2f);
-            animationState.Data.SetMix(walking.name, idle.name, 0.2f);
-            animationState.Data.SetMix(walking.name, rotate.name, 0.1f);
-            animationState.Data.SetMix(rotate.name, idle.name, 0.2f);
-            animationState.Data.SetMix(walking.name, cough.name, 0.1f);
-            animationState.Data.SetMix(cough.name, idle.name, 0.1f);
-            animationState.Data.SetMix(cough.name, walking.name, 0.1f);
         }
 
         private void Update()

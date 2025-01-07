@@ -1,10 +1,8 @@
 using Spine.Unity;
 using Spine;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
-using Unity.VisualScripting;
 using CharacterController = Character.CharacterController;
 public class LadderController : MonoBehaviour
 {
@@ -23,11 +21,10 @@ public class LadderController : MonoBehaviour
     public Transform finalTopPosition; // Final top position after dismount
 
     [Header("Climb Settings")]
-    public float climbSpeed = 1f; // Speed of climbing
+    public float climbSpeed = 1f;
 
-    private bool isClimbing = false; // Whether the player is currently climbing
+    private bool isClimbing = false; 
     private bool isGoingUp = false;
-    private Vector3 targetPosition; // Final position for climb animation
 
     public void ClimbLadder(bool isGoingUp)
     {
