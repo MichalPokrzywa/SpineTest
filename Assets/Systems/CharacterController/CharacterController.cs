@@ -23,13 +23,16 @@ namespace Character
         [SerializeField]
         private AnimationReferenceAsset cough;
 
-        private SkeletonAnimation skeletonAnimation;
+        [HideInInspector]
+        public SkeletonAnimation skeletonAnimation { get; private set; }
         private AnimationState animationState;
         private bool movingRight = true;
         private bool isTurning = false;
         private bool isCoughing = false;
+        [HideInInspector]
+        public bool isClimbing = false;
         private Vector3 lastFramePosition;
-
+        private LadderController nearbyLadder;
         void Start()
         {
             characterState = CharacterState.Idle;
@@ -48,92 +51,121 @@ namespace Character
 
         private void Update()
         {
+            if (isCoughing || isTurning || isClimbing) return;
+
             float horizontal = Input.GetAxis("Horizontal");
-            if (!isCoughing)
+            float vertical = Input.GetAxis("Vertical");
+
+            if (horizontal != 0)
             {
-                if (!isTurning)
-                {
-                    if (horizontal < 0 && movingRight || horizontal > 0 && !movingRight)
-                    {
-                        TriggerTurnAnimation();
-
-                    }
-                    movingRight = horizontal switch
-                    {
-                        > 0 => true,
-                        < 0 => false,
-                        _ => movingRight
-                    };
-
-                }
-
-                if (!isTurning)
-                {
-                    if (horizontal != 0 && characterState == CharacterState.Idle)
-                    {
-                        characterState = CharacterState.Moving;
-                        SetAnimation(1, walking, true, 1f, MixBlend.Replace);
-                    }
-                    else if (horizontal == 0 && characterState == CharacterState.Moving)
-                    {
-                        characterState = CharacterState.Idle;
-                        SetAnimation(1, idle, true, 1f, MixBlend.Replace);
-                    }
-                    transform.Translate(new Vector3(horizontal, 0, 0) * speed * Time.deltaTime);
-                }
+                HandleMovement(horizontal);
             }
+            if (vertical != 0)
+            {
+                HandleLadderInteraction(vertical);
+            }
+            else if (horizontal == 0 && vertical == 0 && characterState == CharacterState.Moving)
+            {
+                SetIdleState();
+            }
+        }
 
+        private void HandleMovement(float horizontal)
+        {
+            if ((horizontal > 0 && !movingRight) || (horizontal < 0 && movingRight))
+            {
+                TriggerTurnAnimation();
+                movingRight = horizontal > 0;
+            }
+            else
+            {
+                if (characterState == CharacterState.Idle)
+                {
+                    SetWalkingState();
+                }
+                transform.Translate(Vector3.right * horizontal * speed * Time.deltaTime);
+            }
+        }
+        private void HandleLadderInteraction(float vertical)
+        {
+            if (nearbyLadder == null) return;
+
+            bool goingUp = vertical > 0;
+            Debug.Log(goingUp);
+            isClimbing = true;
+            nearbyLadder.ClimbLadder(goingUp);
+        }
+
+        private void SetWalkingState()
+        {
+            characterState = CharacterState.Moving;
+            SetAnimation(1, walking, true);
+        }
+
+        public void SetIdleState()
+        {
+            characterState = CharacterState.Idle;
+            SetAnimation(1, idle, true);
         }
 
         public void TriggerCoughAnimation()
         {
+            if (isCoughing) return;
+
             isCoughing = true;
             TrackEntry coughTrack = animationState.SetAnimation(1, cough, false);
-            coughTrack.MixBlend = MixBlend.Replace;
-            coughTrack.Alpha = 1f;
+
             coughTrack.Complete += entry =>
             {
-                switch (characterState)
-                {
-                    case CharacterState.Idle:
-                        SetAnimation(1, idle, true, 1f, MixBlend.Replace);
-                        break;
-                    case CharacterState.Moving:
-                        SetAnimation(1, walking, true, 1f, MixBlend.Replace);
-                        break;
-                }
-
+                SetAnimation(1, characterState == CharacterState.Idle ? idle : walking, true);
                 isCoughing = false;
             };
-
         }
+
         private void TriggerTurnAnimation()
         {
             isTurning = true;
             TrackEntry rotateTrack = animationState.SetAnimation(1, rotate, false);
-            rotateTrack.MixBlend = MixBlend.Replace;
-            rotateTrack.Complete += EntryOnComplete;
+
+            rotateTrack.Complete += entry =>
+            {
+                FlipCharacter();
+                SetIdleState();
+                isTurning = false;
+            };
+        }
+        
+        private void FlipCharacter()
+        {
+            Vector3 scale = transform.localScale;
+            scale.x *= -1;
+            transform.localScale = scale;
         }
 
-        private void EntryOnComplete(TrackEntry trackentry)
+        private void OnTriggerEnter(Collider other)
         {
-            SetAnimation(1, idle, true, 1f, MixBlend.Replace);
-            Vector3 scale = transform.localScale;
-            scale.x = movingRight ? Mathf.Abs(scale.x) : -Mathf.Abs(scale.x);
-            transform.localScale = scale;
-            isTurning = false;
+            if (other.TryGetComponent(out LadderController ladder))
+            {
+                nearbyLadder = ladder;
+            }
         }
-        private void SetAnimation(int trackIndex, AnimationReferenceAsset animation, bool loop, float alpha, MixBlend blendMode)
+
+        private void OnTriggerExit(Collider other)
         {
-            TrackEntry track = animationState.SetAnimation(trackIndex, animation, loop);
-            track.MixBlend = blendMode;
-            track.Alpha = alpha;
+            if (other.TryGetComponent(out LadderController ladder) && ladder == nearbyLadder)
+            {
+                nearbyLadder = null;
+            }
+        }
+        private void SetAnimation(int trackIndex, AnimationReferenceAsset animation, bool loop)
+        {
+            animationState.SetAnimation(trackIndex, animation, loop);
         }
     }
 
     public enum CharacterState
     {
-        Idle = 0,
-        Moving = 1
+        Idle,
+        Moving
     }
 }

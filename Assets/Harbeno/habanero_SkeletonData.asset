@@ -19,14 +19,19 @@ MonoBehaviour:
   isUpgradingBlendModeMaterials: 0
   blendModeMaterials:
     requiresBlendModeMaterials: 0
-    applyAdditiveMaterial: 0
+    applyAdditiveMaterial: 1
     additiveMaterials: []
     multiplyMaterials: []
     screenMaterials: []
-  skeletonDataModifiers:
-  - {fileID: 11400000, guid: 22c0225612a65ee4fb15bad49f644762, type: 2}
-  fromAnimation: []
-  toAnimation: []
-  duration: []
+  skeletonDataModifiers: []
+  fromAnimation:
+  - coughing
+  - coughing
+  toAnimation:
+  - idle
+  - walking_side
+  duration:
+  - 0.1
+  - 0.1
   defaultMix: 0.2
   controller: {fileID: 0}
